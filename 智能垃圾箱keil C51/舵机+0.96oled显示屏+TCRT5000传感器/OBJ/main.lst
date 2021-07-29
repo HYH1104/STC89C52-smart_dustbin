@@ -1,0 +1,293 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              04/28/2021 19:18:04 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\OBJ\main.obj
+COMPILER INVOKED BY: D:\Keil uvision5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTEXTEND P
+                    -RINT(.\OBJ\main.lst) TABS(2) OBJECT(.\OBJ\main.obj)
+
+line level    source
+
+   1          //头文件调用
+   2          #include "REG51.h"
+   3          #include "oled.h"
+   4          #include "intrins.h"
+   5          //管脚定义
+   6          sbit TCRC = P0^0;
+   7          sbit YYSB1= P0^1;
+   8          sbit YYSB2= P0^2;
+   9          sbit YYSB3= P0^3;
+  10          sbit YYSB4= P0^4;
+  11          sbit YYSB5= P0^5;
+  12          sbit PWM1 = P3^4; 
+  13          sbit PWM2 = P3^5; 
+  14          sbit PWM3 = P3^6; 
+  15          sbit PWM4 = P3^7; 
+  16          //变量声明
+  17          unsigned char count = 0;
+  18          unsigned char timer1 ;
+  19          unsigned char timer2 ;
+  20          unsigned char timer3 ;
+  21          unsigned char timer4 ;
+  22          unsigned char cczd1 = 1;
+  23          unsigned char cczd2 = 1;
+  24          unsigned char cczd3 = 1;
+  25          unsigned char cczd4 = 1;
+  26          unsigned char UART_buff;
+  27          bit New_rec = 0, Send_ed = 1;
+  28          //定时器0初始化
+  29          void Timer0_Init()           
+  30          {
+  31   1          TMOD &= 0x00;
+  32   1          TMOD |= 0x21;
+  33   1       
+  34   1          TH0 = 0xff;// 0.1ms
+  35   1          TL0 = 0xa4;
+  36   1       
+  37   1          ET0 = 1;      
+  38   1          TR0 = 1; 
+  39   1          EA=1; 
+  40   1      }
+  41          //定时器0中断
+  42          void Time0_Init() interrupt 1 
+  43          {
+  44   1        TR0 = 0; 
+  45   1        TH0 = 0xff; // 0.1ms
+  46   1        TL0 = 0xa4;
+  47   1        
+  48   1        if(count <= timer1) //5==0°15==90°
+  49   1        { 
+  50   2          PWM1 = 1; 
+  51   2        }
+  52   1        else 
+  53   1        { 
+  54   2          PWM1 = 0; 
+C51 COMPILER V9.57.0.0   MAIN                                                              04/28/2021 19:18:04 PAGE 2   
+
+  55   2        }
+  56   1        if(count <= timer2) //5==0?15==90?
+  57   1        { 
+  58   2          PWM2 = 1; 
+  59   2        }
+  60   1        else 
+  61   1        { 
+  62   2          PWM2 = 0; 
+  63   2        }
+  64   1        if(count <= timer3)//5==0°15==90°
+  65   1        { 
+  66   2          PWM3 = 1; 
+  67   2        }
+  68   1        else 
+  69   1        { 
+  70   2          PWM3 = 0; 
+  71   2        }
+  72   1        if(count <= timer4) //5==0°15==90°
+  73   1        { 
+  74   2          PWM4 = 1; 
+  75   2        }
+  76   1        else 
+  77   1        { 
+  78   2          PWM4 = 0; 
+  79   2        }
+  80   1        count++;
+  81   1        if (count >= 200) //T = 20ms
+  82   1        { 
+  83   2          count = 0; 
+  84   2        }
+  85   1        TR0 = 1; //定时器T0
+  86   1      }
+  87          void se_int()
+  88          {
+  89   1      SCON = 0x50;   //串口方式1, 8-n-1, 允许接收.
+  90   1      TH1 = 0xFD;    //[url=]//9600bps@11.0592MHz[/url]
+  91   1      TL1 = 0xFD;
+  92   1      IP=0x10;
+  93   1      TR1 = 1;                        
+  94   1      ES  = 1;       //开中断.
+  95   1      }
+  96          //串口中断
+  97          void ser_int (void) interrupt 4 
+  98          {
+  99   1        Timer0_Init();
+ 100   1          if(RI == 1) 
+ 101   1        {  //如果收到.
+ 102   2          RI = 0;      //清除标志.
+ 103   2          New_rec = 1;
+ 104   2          UART_buff = SBUF;  //接收.
+ 105   2        if(UART_buff == '1') //串口接收数据1接口 
+ 106   2          {
+ 107   3          cczd1=0;  
+ 108   3          }
+ 109   2        if(UART_buff == '2') //串口接收数据2接口 
+ 110   2          {   
+ 111   3          cczd2=0;
+ 112   3          }
+ 113   2        if(UART_buff == '3')  //串口接收数据3接口
+ 114   2          {   
+ 115   3          cczd3=0;  
+ 116   3          }
+C51 COMPILER V9.57.0.0   MAIN                                                              04/28/2021 19:18:04 PAGE 3   
+
+ 117   2        if(UART_buff == '4')  //串口接收数据4接口
+ 118   2          {   
+ 119   3          cczd4=0;
+ 120   3          }
+ 121   2          }
+ 122   1          else  
+ 123   1        {        //如果送毕.
+ 124   2          TI = 0;      //清除标志.
+ 125   2          Send_ed = 1;
+ 126   2          }
+ 127   1      }
+ 128          //主函数
+ 129          int main(void)
+ 130          { 
+ 131   1      //初始化
+ 132   1      OLED_Init();  
+ 133   1      Timer0_Init();
+ 134   1      se_int();
+ 135   1      TCRC=1;YYSB1=1;YYSB2=1;YYSB3=1;YYSB4=1;
+ 136   1      // 开始界面
+ 137   1      OLED_ShowCHinese(24,0, 0);
+ 138   1      OLED_ShowCHinese(40,0, 1);
+ 139   1      OLED_ShowCHinese(56,0, 2);
+ 140   1      OLED_ShowCHinese(72,0, 3);
+ 141   1      OLED_ShowCHinese(88,0, 4);  
+ 142   1      OLED_ShowString (28,2,"programer:");
+ 143   1      OLED_ShowCHinese(36,4, 8);
+ 144   1      OLED_ShowCHinese(54,4, 9);
+ 145   1      OLED_ShowCHinese(72,4,10);
+ 146   1      delay_ms(3000);
+ 147   1      OLED_Clear();
+ 148   1      //主循环   
+ 149   1       while(1) 
+ 150   1       {      
+ 151   2          int pd=1;
+ 152   2          if(TCRC==0)//TCRC红外传感接口
+ 153   2          {
+ 154   3          OLED_Clear();
+ 155   3          OLED_ShowCHinese(40,2,11);
+ 156   3          OLED_ShowCHinese(72,2,12);
+ 157   3          delay_ms(500);
+ 158   3          timer1 =14;//舵机1开
+ 159   3          count=0;
+ 160   3          delay_ms(500);
+ 161   3          OLED_Clear();
+ 162   3          OLED_ShowCHinese(36,2,27);
+ 163   3          OLED_ShowCHinese(54,2,11);
+ 164   3          OLED_ShowCHinese(72,2,12);  
+ 165   3            while(pd>0)
+ 166   3            {
+ 167   4              if(TCRC==1)
+ 168   4              {
+ 169   5              OLED_Clear();
+ 170   5              OLED_ShowCHinese(40,2,20);
+ 171   5              OLED_ShowCHinese(72,2,21);
+ 172   5              delay_ms(500);
+ 173   5              OLED_Clear(); 
+ 174   5              timer1 =6;//舵机1关
+ 175   5              count=0;  
+ 176   5              TCRC=1;
+ 177   5              delay_ms(500);
+ 178   5              OLED_Clear();
+C51 COMPILER V9.57.0.0   MAIN                                                              04/28/2021 19:18:04 PAGE 4   
+
+ 179   5              pd=-1;
+ 180   5              }
+ 181   4            }
+ 182   3          }   
+ 183   2          if((YYSB1==0)||(cczd1==0))//语音识别1接口
+ 184   2          {
+ 185   3          OLED_Clear();
+ 186   3          OLED_ShowCHinese(24,2,16);
+ 187   3          OLED_ShowCHinese(40,2,17);
+ 188   3          OLED_ShowCHinese(56,2,18);
+ 189   3          OLED_ShowCHinese(72,2, 2);
+ 190   3          OLED_ShowCHinese(88,2, 3);  
+ 191   3          timer1 =14;//舵机1开
+ 192   3          count=0;
+ 193   3          delay_ms(3500);
+ 194   3          timer1 =6;//舵机1关
+ 195   3          count=0;
+ 196   3          YYSB1=1;
+ 197   3          cczd1=1;
+ 198   3          OLED_Clear();
+ 199   3          }   
+ 200   2          if((YYSB2==0)||(cczd2==0))//语音识别2接口
+ 201   2          {
+ 202   3          OLED_Clear();
+ 203   3          OLED_ShowCHinese(36,2,5);
+ 204   3          OLED_ShowCHinese(54,2,2);
+ 205   3          OLED_ShowCHinese(72,2,3);     
+ 206   3          timer2 =14;//舵机2开
+ 207   3          count=0;
+ 208   3          delay_ms(3500);
+ 209   3          timer2 =6;//舵机2关
+ 210   3          count=0;
+ 211   3          YYSB2=1;
+ 212   3          cczd2=1;
+ 213   3          OLED_Clear();
+ 214   3          } 
+ 215   2          if((YYSB3==0)||(cczd3==0))//语音识别3接口
+ 216   2          {
+ 217   3          OLED_Clear();
+ 218   3          OLED_ShowCHinese(36,2,19);
+ 219   3          OLED_ShowCHinese(54,2, 2);
+ 220   3          OLED_ShowCHinese(72,2, 3);  
+ 221   3          timer3 =14;//舵机3开
+ 222   3          count=0;
+ 223   3          delay_ms(3500);
+ 224   3          timer3 =6;//舵机3关
+ 225   3          count=0;
+ 226   3          YYSB3=1;
+ 227   3          cczd3=1;
+ 228   3          OLED_Clear();
+ 229   3          }
+ 230   2          if((YYSB4==0)||(cczd4==0))//语音识别4接口
+ 231   2          {
+ 232   3          OLED_Clear();
+ 233   3          OLED_ShowCHinese(32,2,6);
+ 234   3          OLED_ShowCHinese(48,2,7);
+ 235   3          OLED_ShowCHinese(64,2,2);
+ 236   3          OLED_ShowCHinese(80,2,3); 
+ 237   3          timer4 =14;//舵机4开
+ 238   3          count=0;
+ 239   3          delay_ms(3500);
+ 240   3          timer4 =6;//舵机4关
+C51 COMPILER V9.57.0.0   MAIN                                                              04/28/2021 19:18:04 PAGE 5   
+
+ 241   3          count=0;
+ 242   3          YYSB4=1;
+ 243   3          cczd4=1;
+ 244   3          OLED_Clear();
+ 245   3          } 
+ 246   2          if((TCRC=1)&&(YYSB1==1)&&(YYSB2==1)&&(YYSB3==1)&&(YYSB4==1)&&(YYSB5==1))//语音识别5接口
+ 247   2          {
+ 248   3          OLED_ShowCHinese(40,2,25);
+ 249   3          OLED_ShowCHinese(72,2,26);
+ 250   3          }
+ 251   2          else//非工作
+ 252   2          {
+ 253   3          OLED_Clear();
+ 254   3          OLED_ShowCHinese(36,2,22);
+ 255   3          OLED_ShowCHinese(54,2,23);
+ 256   3          OLED_ShowCHinese(72,2,24);
+ 257   3          delay_ms(666);  
+ 258   3          OLED_Clear();     
+ 259   3          }
+ 260   2        }
+ 261   1       }    
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    813    ----
+   CONSTANT SIZE    =     11    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

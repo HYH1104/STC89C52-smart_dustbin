@@ -1,0 +1,55 @@
+C51 COMPILER V9.57.0.0   REG_RW                                                            04/25/2021 19:35:04 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE REG_RW
+OBJECT MODULE PLACED IN ..\obj\Reg_RW.obj
+COMPILER INVOKED BY: D:\Keil uvision5\C51\BIN\C51.EXE ..\code\Reg_RW.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\code;..\user) 
+                    -DEBUG OBJECTEXTEND PRINT(.\Reg_RW.lst) TABS(2) OBJECT(..\obj\Reg_RW.obj)
+
+line level    source
+
+   1          /***********************************************
+   2          **  工程名称：UNV-01语音识别模块驱动程序
+   3          **  CPU: STC11L08XE
+   4          **  晶振：22.1184MHZ
+   5          **  波特率：9600 bit/S
+   6          **  说明：口令模式： 即每次识别时都需要说“小鹰”这个口令 ，才能够进行下一级的识别
+   7          /*****************************************************/
+   8          #include "config.h"
+   9          
+  10              #define LD_INDEX_PORT   (*((volatile unsigned char xdata*)(0x8100))) 
+  11              #define LD_DATA_PORT    (*((volatile unsigned char xdata*)(0x8000))) 
+  12              //评估板上 MCU的A8 连接到 LD芯片的AD
+  13              //         MCU的A14 连接到 LD芯片的CSB
+  14              //         MCU的RD、WR 连接 LD芯片的RD、WR (xdata 读写时自动产生低信号)
+  15              //
+  16              //0x8100的二进制是10000001 00000000   CSB=0 AD=1
+  17              //                 ^     ^
+  18              //0x8000的二进制是10000000 00000000   CSB=0 AD=0
+  19              //                 ^     ^    
+  20              void LD_WriteReg( unsigned char address, unsigned char dataout )
+  21              {
+  22   1            LD_INDEX_PORT  = address;         
+  23   1            LD_DATA_PORT = dataout;          
+  24   1          }
+  25              
+  26              unsigned char LD_ReadReg( unsigned char address )
+  27              {
+  28   1            LD_INDEX_PORT = address;         
+  29   1            return (unsigned char)LD_DATA_PORT;     
+  30   1          }
+  31          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     22    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

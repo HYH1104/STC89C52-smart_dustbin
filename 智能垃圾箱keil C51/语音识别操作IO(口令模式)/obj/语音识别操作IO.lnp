@@ -1,0 +1,6 @@
+"..\obj\main.obj",
+"..\obj\LDChip.obj",
+"..\obj\Reg_RW.obj",
+"..\obj\usart.obj" 
+TO "..\obj\语音识别操作IO" 
+PRINT(".\语音识别操作IO.m51") RAMSIZE(256) 

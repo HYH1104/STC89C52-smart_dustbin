@@ -1,0 +1,5 @@
+".\OBJ\STARTUP.obj",
+".\OBJ\main.obj",
+".\OBJ\oled.obj" 
+TO ".\OBJ\ÖÇÄÜÀ¬»øÍ°" 
+PRINT(".\OBJ\ÖÇÄÜÀ¬»øÍ°.m51") RAMSIZE(256) 
